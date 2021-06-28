@@ -43,11 +43,12 @@
       "name": "S8dmq5YIUoc.f137.mp4"
     }
   ],
-  "archived_timestamp": "2021-03-12T23:27:11.685196",
+  "archived_timestamp": "2021-03-12T23:27:11.685196Z",
   "timestamps": {
     "actualStartTime": "2019-03-29T10:00:10Z",
     "publishedAt": "2019-03-29T09:58:15Z",
     "scheduledStartTime": "2019-03-29T10:00:00Z",
     "actualEndTime": "2019-03-29T10:05:29Z"
-  }
+  },
+  "drive_base": "0"
 }
