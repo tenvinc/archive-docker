@@ -15,6 +15,14 @@ services:
       - 3000:3000
     networks:
       - ragtag-archive
+    volumes:
+      - ./entrypoint.sh:/app/entrypoint.sh
+    depends_on:
+      elastic:
+        condition: service_healthy
+    entrypoint: "bash /app/entrypoint.sh"
+    command: "yarn start"
+
 
   # Elasticsearch database
   elastic:
@@ -28,6 +36,11 @@ services:
       - 9200:9200
     networks:
       - ragtag-archive
+    healthcheck:
+      test: curl -s http://elastic:9200 >/dev/null || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Nginx file server
   nginx:
@@ -36,6 +49,7 @@ services:
       # TODO: update mount point to where your files will be stored
       - nginxdata:/usr/share/nginx/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - /media/tenvinc/a00e3fc5-9ff4-4909-a253-c9ecebb2faaa/Hololive/MinatoAqua:/usr/share/nginx/archive
     ports:
       - 8080:80
     networks:
