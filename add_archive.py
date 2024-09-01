@@ -4,7 +4,11 @@ import json
 import traceback
 import requests
 import argparse
+import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
+
+channels_processed = []
 
 def parse_youtube_json(youtube_json):
     """
@@ -99,6 +103,18 @@ def add_to_archive_browser(name, db_json_dict):
     else:
         print(f"Request failed with status code: {response.status_code}")
 
+def add_channel_profile(profile_pic_path):
+    script_dir = script_dir = Path(__file__).parent.resolve()
+    compose_file_path = os.path.join(script_dir, 'docker-compose.yml')
+    path_obj = Path(profile_pic_path)
+    nginx_pic_path = Path(os.path.join(os.sep, 'usr', 'share', 'nginx', 'html', path_obj.parent.name, path_obj.name))
+    
+    mkdir_command = f"docker compose -f {compose_file_path} exec nginx mkdir -p {nginx_pic_path.parent.resolve()}"
+    result = subprocess.run(mkdir_command.split(' '), capture_output=True, check=True)
+    cp_command = f'docker compose -f {compose_file_path} cp {profile_pic_path} nginx:{nginx_pic_path.resolve()}'
+    result = subprocess.run(cp_command.split(' '), capture_output=True, check=True)
+    print(f"Added channel metadata for {path_obj.parent.name}")
+
 def main():
     global archive_dir
     for root, _, files in os.walk(archive_dir):
@@ -128,25 +144,37 @@ def main():
                         os.makedirs(directory)
                     with open(os.path.join(directory, f"test-{folder_name}.db.json"), "w") as db_json_file:
                         json.dump(db_json_dict, db_json_file, ensure_ascii=False, indent=2)
+
+                if db_json_dict['channel_id'] not in channels_processed:
+                    channels_processed.append(db_json_dict['channel_id'])
                 add_to_archive_browser(folder_name, db_json_dict)
 
         except KeyError as ke:
             print(traceback.format_exc())
             print(f"Unable to parse youtube json file. Skipping {folder_name}...")
             continue
-
+    
+    global skip_channel_upload
+    if not skip_channel_upload:
+        for channel in channels_processed:
+            image_path = os.path.join(archive_dir, channel, 'profile.jpg')
+            if not os.path.exists(image_path):
+                continue
+            add_channel_profile(image_path)
 
 if __name__ == "__main__":
-    global archive_dir, drive_base, gen_debug_files_flag
+    global archive_dir, drive_base, gen_debug_files_flag, skip_channel_upload
     parser = argparse.ArgumentParser() 
     parser.add_argument('--drive_base', type=str, default='archive', help="Base drive name to add all files under in archive browser")
     parser.add_argument('--archive_dir', type=str, required=True, help='Archive directory to process')
     parser.add_argument('--gen_debug_files', type=bool, default=False, help='Flag whether to generate debug files')
+    parser.add_argument('--skip_channel_upload', type=bool, default=False, help='Flag whether to skip uploading channel metadata')
     
     args = parser.parse_args()
     archive_dir = args.archive_dir
     drive_base = args.drive_base
     gen_debug_files_flag = args.gen_debug_files
+    skip_channel_upload = args.skip_channel_upload
     main()
 
 
