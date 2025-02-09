@@ -1,5 +1,4 @@
 version: '3'
-
 # Define all the services
 services:
   # Archive frontend
@@ -18,8 +17,9 @@ services:
     depends_on:
       elastic:
         condition: service_healthy
-    entrypoint: "bash /app/entrypoint.sh"
-    command: "yarn start"
+    entrypoint: "bash /app/entrypoint.sh" 
+    command: "yarn start" 
+    restart: unless-stopped
 
 
   # Elasticsearch database
@@ -35,8 +35,9 @@ services:
     healthcheck:
       test: curl -s http://elastic:9200 >/dev/null || exit 1
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
 
   # Nginx file server
   nginx:
@@ -46,7 +47,7 @@ services:
       - nginxdata:/usr/share/nginx/html
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ${SECRETS_LOCATION}:/etc/nginx/ssl
-      - /media/tenvinc/a00e3fc5-9ff4-4909-a253-c9ecebb2faaa/Hololive/MinatoAqua:/usr/share/nginx/archive
+      - /mnt/main_storage_share/Hololive/MinatoAqua:/usr/share/nginx/archive
     ports:
       - 3000:3000    # Frontend
       - 8080:8080    # Nginx file server
